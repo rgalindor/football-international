@@ -6,7 +6,7 @@ output:
     df_print: paged
 ---
 
-Football is a very exciting sport. Until now, this is the most popular game in the entire Earth planet. Sorry not sorry USA games.
+Football is a very exciting sport. Until now, this is the most popular game on the entire Earth planet. Sorry, not sorry about other games.
 
 I want to review data collected since 1872 trying to understand how matches between countries have evolved up to this moment. So, we are calling to `R` and a few libraries to help us visualizing data:
 
@@ -38,8 +38,7 @@ head(shootouts)
 
 ## Analysis
 
-One interesting thing is to take a look of the context of the matches, some of them could be not relevant at all, however there is also **Worl cup** matches, continental tournaments, and so on:
-
+One interesting thing is to take a look at the context of the matches, some of them could be not relevant at all, however, there is also **World cup** matches, continental tournaments, and so on:
 
 ```{r}
 levels(as.factor(results$tournament)) -> tournaments
@@ -55,7 +54,7 @@ ggplotly(p)
 ```
 
 
-Now we need to process a little bit the data to assign an stadard way to provide points based on the outcome of every match:
+Now we need to process a little bit of the data to assign a standard way to provide points based on the outcome of every match:
 
 | Points | Outcome |
 |--|--|
@@ -63,7 +62,7 @@ Now we need to process a little bit the data to assign an stadard way to provide
 | $1$ | Tie |
 | $0$ | Defeat |
 
-> In FIFA scores, 2 points can be achieved by winning shootout after a tied match, however I ignore that for the following analysis
+> In FIFA scores, 2 points can be achieved by winning a shootout after a tied match, however, I ignored that for the following analysis
 
 Let's take a look on how it looks now:
 
@@ -77,13 +76,13 @@ results %>% filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
 head(worldCupResults)
 ```
 
-After this step we also need to transform a little bit the structure od this dataset in order to measure performance of each National Team in this way:
+After this step we also need to transform a little bit the structure of this dataset in order to measure the performance of each National Team in this way:
 
- - **Performance** The points achieved by the team standarized by the total number of matches played.
+ - **Performance** The points achieved by the team standardized by the total number of matches played.
  - **Offensive** The average number of goals scored by a team in each match played.
  - **Defense** The average number of goals received by a team in each match payed.
 
-Then we can take a look on how it seems (for tournaments that contains `"FIFA World Cup"` in its name)
+Then we can see how it looks (for tournaments that contain `"FIFA World Cup"` in its name).
 
 ```{r}
 results %>% pivot_longer(c(home_team,away_team),names_to = "homeaway", values_to = "team") %>% mutate(points=ifelse(grepl("home",homeaway),home_points,away_points), goals=ifelse(grepl("home",homeaway),home_score,away_score),receivedGoals=ifelse(grepl("home",homeaway),away_score,home_score)) %>% select(date,tournament,country,team,points,goals,receivedGoals) -> results
@@ -95,23 +94,23 @@ worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),
 
 ### FIFA World Cup (and qualifiers)
 
-The most interesting matches occurs at [FIFA World Cup](https://www.fifa.com/tournaments/mens/worldcup). So the we can focus on what happens in this tournament:
+The most interesting matches occur at [FIFA World Cup](https://www.fifa.com/tournaments/mens/worldcup). So we can focus on what happens in this tournament:
 
 ```{r}
 worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National Teams in matches") -> p
 ggplotly(p) 
 ```
 
-Germany emerges as the best in performance over all the matches related with the **World Cup**. Is not a surprise at all, remember all of the _"goleadas"_ that has produced, in the qualifiers as well as in the knock-out matches in the final stages of the tournament.
+Germany emerges as the best in performance over all the matches related to the **World Cup**. Is not a surprise at all, remember all of the _"goleadas"_ that has produced, in the qualifiers as well as in the knock-out matches in the final stages of the tournament.
 
-Now we can take a look on what happens if we focus only on the final stage, I mean filering out the qualifiers:
+Now we can take a look at what happens if we focus only on the final stage, I mean filtering out the qualifiers:
 
 ```{r}
 worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National Teams in matches of FIFA World Cup") -> p
 ggplotly(p) 
 ```
 
-Now Brazil is the highlight. And it is not a surprise, they are also a winning machine in football. Germany got the second place (this also is not a surprise). 
+Now Brazil is the highlight. And it is not a surprise, they are also a winning machine in football. Germany got second place (this also is not a surprise). 
 
 Another interesting thing to appreciate is the offensive of Hungary! For all of the young people, you must know that in other times they were a true fear for every other nation in football.
 
@@ -122,22 +121,20 @@ You can also look to the Netherlands (the eternal runner-up), and my *Mexico* th
 
 ### Overall history of the football 
 
-
-It is also interesting to take a more general view of history of international football. (To forget about the unsurprising performance of my team).
+It is also interesting to take a more general view of the history of international football. (To forget about the unsurprising performance of my team).
 
 ```{r}
 results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensive in all matches") -> p
 ggplotly(p)
 ```
 
-And there are a lot of surprises! Maybe they are due to the lack of competitiveness, however it is noticeable that in the center are the most popular teams, also with more played matches, and it seems that competency tends to center the behavior of the parameters selected.
+And there are a lot of surprises! Maybe they are due to the lack of competitiveness, however, it is noticeable that in the center are the most popular teams, also with more played matches, and it seems that competency tends to center the behavior of the parameters selected.
 
-
-So, we can take a look on how defense relate to offensive:
+So, we can take a look at how defense relates to offensive:
 
 ```{r}
 results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(color=performance,x=ofensive,y=defense,text=paste(team,matches,sep="\n"))) + geom_point() + labs(title="Defense vs offensive in all matches") -> p
 ggplotly(p)
 ```
 
-Maybe we can construct a ML tool to classify teams according to the performance. There is a pattern, however there is also a lot of noise due to not so professional matches in this dataset.
+Maybe we can construct an ML tool to classify teams according to their performance. There is a pattern, however, there is also a lot of noise due to not-so-professional matches in this dataset.
