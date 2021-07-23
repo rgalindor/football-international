@@ -21,8 +21,7 @@ The first thing is to read files. I downloaded [this project](https://www.kaggle
 
 
 ```{r}
-results<-read.csv("results.csv", encoding = "UTF-8")
-shootouts<-read.csv("shootouts.csv", encoding = "UTF-8")
+results <- read.csv("results.csv", encoding = "UTF-8")
 ```
 
 This dataset contains data about $42k+$ football matches in the history of international encounters between national teams. So, let's take a little taste of the data:
@@ -30,10 +29,6 @@ This dataset contains data about $42k+$ football matches in the history of inter
 
 ```{r}
 head(results)
-```
-
-```{r}
-head(shootouts)
 ```
 
 ## Analysis
@@ -48,8 +43,18 @@ sample(tournaments,20)
 Filtering by tournaments with at least 100 matches played in the history:
 
 ```{r}
-results %>% group_by(tournament) %>% summarise(count=n()) %>% filter(count > 100) %>% select(tournament) -> popularCups
-results %>% filter(tournament %in% popularCups$tournament) %>% ggplot(aes(x=tournament, fill=tournament)) + geom_bar() + coord_flip() -> p 
+results %>%
+  group_by(tournament) %>%
+  summarise(count=n()) %>%
+  filter(count > 100) %>%
+  select(tournament) -> popularCups
+
+results %>%
+  filter(tournament %in% popularCups$tournament) %>%
+  ggplot(aes(x=tournament, fill=tournament)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title="Matches in tournaments") -> p 
 ggplotly(p)
 ```
 
@@ -72,7 +77,8 @@ results %>%
   mutate(home_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,3,0))) %>%
   mutate(away_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,0,3))) -> results
 
-results %>% filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+results %>%
+  filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
 head(worldCupResults)
 ```
 
@@ -85,11 +91,27 @@ After this step we also need to transform a little bit the structure of this dat
 Then we can see how it looks (for tournaments that contain `"FIFA World Cup"` in its name).
 
 ```{r}
-results %>% pivot_longer(c(home_team,away_team),names_to = "homeaway", values_to = "team") %>% mutate(points=ifelse(grepl("home",homeaway),home_points,away_points), goals=ifelse(grepl("home",homeaway),home_score,away_score),receivedGoals=ifelse(grepl("home",homeaway),away_score,home_score)) %>% select(date,tournament,country,team,points,goals,receivedGoals) -> results
+results %>%
+  pivot_longer(c(home_team,away_team),names_to = "homeaway", values_to = "team") %>%
+  mutate(points=ifelse(grepl("home",homeaway),home_points,away_points),
+         goals=ifelse(grepl("home",homeaway),home_score,away_score),
+         receivedGoals=ifelse(grepl("home",homeaway),away_score,home_score)) %>%
+  select(date,tournament,country,team,points,goals,receivedGoals) -> results
 
-results %>% filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+results %>%
+  filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
 
-worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% arrange(desc(performance)) %>% head()
+worldCupResults %>%
+  group_by(team) %>%
+  summarise( p=sum(points),
+             goals=sum(goals),
+             against=sum(receivedGoals),
+             matches=n()) %>%
+  mutate(performance=p/matches,
+         ofensive=goals/matches,
+         defense=against/matches) %>%
+  arrange(desc(performance)) %>%
+  head()
 ```
 
 ### FIFA World Cup (and qualifiers)
@@ -97,7 +119,18 @@ worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),
 The most interesting matches occur at [FIFA World Cup](https://www.fifa.com/tournaments/mens/worldcup). So we can focus on what happens in this tournament:
 
 ```{r}
-worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National Teams in matches") -> p
+worldCupResults %>%
+  group_by(team) %>%
+  summarise( p=sum(points),
+             goals=sum(goals),
+             against=sum(receivedGoals),
+             matches=n()) %>%
+  mutate( performance=p/matches,
+          ofensive=goals/matches,
+          defense=against/matches) %>%
+  ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) +
+  geom_point() +
+  labs(title="Performance vs offensiveness of National Teams in matches") -> p
 ggplotly(p) 
 ```
 
@@ -106,7 +139,19 @@ Germany emerges as the best in performance over all the matches related to the *
 Now we can take a look at what happens if we focus only on the final stage, I mean filtering out the qualifiers:
 
 ```{r}
-worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National Teams in matches of FIFA World Cup") -> p
+worldCupResults %>%
+  filter(!grepl("qualifi",tournament)) %>%
+  group_by(team) %>%
+  summarise( p=sum(points),
+             goals=sum(goals),
+             against=sum(receivedGoals),
+             matches=n()) %>%
+  mutate( performance=p/matches,
+          ofensive=goals/matches,
+          defense=against/matches) %>%
+  ggplot(aes(x=performance, y=ofensive, size=defense, color=matches, text=team)) +
+  geom_point() +
+  labs(title="Performance vs offensiveness of National Teams in matches of FIFA World Cup") -> p
 ggplotly(p) 
 ```
 
@@ -124,7 +169,18 @@ You can also look to the Netherlands (the eternal runner-up), and my *Mexico* th
 It is also interesting to take a more general view of the history of international football. (To forget about the unsurprising performance of my team).
 
 ```{r}
-results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensive in all matches") -> p
+results %>%
+  group_by(team) %>%
+  summarise( p=sum(points),
+             goals=sum(goals),
+             against=sum(receivedGoals),
+             matches=n()) %>%
+  mutate( performance=p/matches,
+          ofensive=goals/matches,
+          defense=against/matches) %>%
+  ggplot(aes( x=performance, y=ofensive, size=defense, color=matches, text=team)) +
+  geom_point() +
+  labs(title="Performance vs offensive in all matches") -> p
 ggplotly(p)
 ```
 
@@ -133,7 +189,18 @@ And there are a lot of surprises! Maybe they are due to the lack of competitiven
 So, we can take a look at how defense relates to offensive:
 
 ```{r}
-results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(color=performance,x=ofensive,y=defense,text=paste(team,matches,sep="\n"))) + geom_point() + labs(title="Defense vs offensive in all matches") -> p
+results %>%
+  group_by(team) %>%
+  summarise( p=sum(points),
+             goals=sum(goals),
+             against=sum(receivedGoals),
+             matches=n()) %>%
+  mutate( performance=p/matches,
+          ofensive=goals/matches,
+          defense=against/matches) %>%
+  ggplot(aes( color=performance, x=ofensive, y=defense, text=paste(team,matches,sep="\n"))) +
+  geom_point() +
+  labs(title="Defense vs offensive in all matches") -> p
 ggplotly(p)
 ```
 
