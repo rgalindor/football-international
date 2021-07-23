@@ -1,24 +1,96 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Football analysis"
 author: "Roberto Galindo Ramírez"
+output:
+  html_document:
+    df_print: paged
 ---
+
+Football is a very exciting sport. Until now, this is the most popular game in the entire Earth planet. Sorry not sorry USA games.
+
+I want to review data collected since 1872 trying to understand how matches between countries have evolved up to this moment. So, we are calling to `R` and a few libraries to help us visualizing data:
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(tidyverse)
-
+library(plotly)
 ```
+
+The first thing is to read files. I downloaded [this project](https://www.kaggle.com/martj42/international-football-results-from-1872-to-2017) at 2021-07-22 from [Kaggle](https://www.kaggle.com). 
+
 
 ```{r}
 results<-read.csv("results.csv", encoding = "UTF-8")
 shootouts<-read.csv("shootouts.csv", encoding = "UTF-8")
 ```
 
+This dataset contains data about $42k+$ football matches in the history of international encounters between national teams. So, let's take a little taste of the data:
+
+
 ```{r}
-levels(as.factor(results$tournament)) -> tournaments
+head(results)
 ```
 
 ```{r}
-results %>% filter(grepl("FIFA World Cup",tournament)) %>% mutate(tied=ifelse(home_score == away_score,TRUE,FALSE)) %>% mutate(home_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,3,0))) %>% mutate(away_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,0,3))) ->worldCupResults
+head(shootouts)
 ```
+
+One interesting thing is to take a look of the context of the matches, some of them could be not relevant at all, however there is also **Worl cup** matches, continental tournaments, and so on:
+
+
+```{r}
+levels(as.factor(results$tournament)) -> tournaments
+sample(tournaments,20)
+```
+
+Filtering by tournaments with at least 100 matches played in the history:
+
+```{r}
+results %>% group_by(tournament) %>% summarise(count=n()) %>% filter(count > 100) %>% select(tournament) -> popularCups
+results %>% filter(tournament %in% popularCups$tournament) %>% ggplot(aes(x=tournament, fill=tournament)) + geom_bar() + coord_flip() -> p 
+ggplotly(p)
+```
+
+
+
+```{r}
+results %>%
+  mutate(tied=ifelse(home_score == away_score,TRUE,FALSE)) %>%
+  mutate(home_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,3,0))) %>%
+  mutate(away_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,0,3))) -> results
+
+results %>% filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+head(worldCupResults)
+```
+Now we need to process a little bit the data:
+
+```{r}
+results %>% pivot_longer(c(home_team,away_team),names_to = "homeaway", values_to = "team") %>% mutate(points=ifelse(grepl("home",homeaway),home_points,away_points), goals=ifelse(grepl("home",homeaway),home_score,away_score),receivedGoals=ifelse(grepl("home",homeaway),away_score,home_score)) %>% select(date,tournament,country,team,points,goals,receivedGoals) -> results
+
+results %>% filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+
+worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% arrange(desc(performance)) %>% head()
+```
+
+```{r}
+worldCupResults %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National teams in matches of World Cup and qualifiers") -> p
+ggplotly(p) 
+```
+
+
+```{r}
+worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensiveness of National Teams in matches of FIFA World Cup") -> p
+ggplotly(p) 
+```
+
+```{r}
+results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(x=performance,y=ofensive,size=defense,color=matches,text=team)) + geom_point() + labs(title="Performance vs offensive in all matches") -> p
+ggplotly(p)
+```
+
+
+```{r}
+results %>% group_by(team) %>% summarise(p=sum(points),goals=sum(goals),against=sum(receivedGoals),matches=n()) %>% mutate(performance=p/matches,ofensive=goals/matches,defense=against/matches) %>% ggplot(aes(color=performance,x=ofensive,y=defense,text=paste(team,matches,sep="\n"))) + geom_point() + labs(title="Defense vs offensive in all matches") -> p
+ggplotly(p)
+```
+
 
