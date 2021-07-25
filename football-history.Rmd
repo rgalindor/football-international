@@ -1,0 +1,129 @@
+---
+title: "History of football analysis"
+author: "Roberto Galindo Ramírez"
+output:
+  html_document:
+    df_print: paged
+---
+
+Football is a very exciting sport. Until now, this is the most popular game on the entire Earth planet. Sorry, not sorry about other games.
+
+I want to review data collected since 1872 trying to understand how matches between countries have evolved up to this moment. So, we are calling to `R` and a few libraries to help us visualizing data:
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(plotly)
+library(lubridate)
+```
+
+## Dataset
+
+The first thing is to read files. I downloaded [this project](https://www.kaggle.com/martj42/international-football-results-from-1872-to-2017) at 2021-07-22 from [Kaggle](https://www.kaggle.com). 
+
+
+```{r}
+results <- read.csv("results.csv", encoding = "UTF-8")
+```
+
+This dataset contains data about $42k+$ football matches in the history of international encounters between national teams. So, let's take a little taste of the data:
+
+
+```{r}
+head(results)
+```
+
+## Analysis
+
+One interesting thing is to take a look at the context of the matches, some of them could be not relevant at all, however, there is also **World cup** matches, continental tournaments, and so on:
+
+```{r}
+levels(as.factor(results$tournament)) -> tournaments
+sample(tournaments,20)
+```
+
+Filtering by tournaments with at least 100 matches played in the history:
+
+```{r}
+results %>%
+  group_by(tournament) %>%
+  summarise(count=n()) %>%
+  filter(count > 100) %>%
+  select(tournament) -> popularCups
+
+results %>%
+  filter(tournament %in% popularCups$tournament) %>%
+  ggplot(aes(x=tournament, fill=tournament)) +
+  geom_bar() +
+  coord_flip() +
+  labs(title="Matches in tournaments") -> p 
+ggplotly(p)
+```
+
+
+Now we need to process a little bit of the data to assign a standard way to provide points based on the outcome of every match:
+
+| Points | Outcome |
+|--|--|
+| $3$ | Victory |
+| $1$ | Tie |
+| $0$ | Defeat |
+
+> In FIFA scores, 2 points can be achieved by winning a shootout after a tied match, however, I ignored that for the following analysis
+
+Let's take a look on how it looks now:
+
+```{r}
+results %>%
+  mutate(tied=ifelse(home_score == away_score,TRUE,FALSE)) %>%
+  mutate(home_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,3,0))) %>%
+  mutate(away_points=ifelse(tied == TRUE,1,ifelse(home_score > away_score,0,3))) -> results
+
+results %>%
+  filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+head(worldCupResults)
+```
+
+After this step we also need to transform a little bit the structure of this dataset in order to measure the performance of each National Team in this way:
+
+ - **Performance** The points achieved by the team standardized by the total number of matches played.
+ - **Offensive** The average number of goals scored by a team in each match played.
+ - **Defense** The average number of goals received by a team in each match payed.
+
+Then we can see how it looks (for tournaments that contain `"FIFA World Cup"` in its name).
+
+```{r}
+results %>%
+  pivot_longer(c(home_team,away_team),names_to = "homeaway", values_to = "team") %>%
+  mutate(points=ifelse(grepl("home",homeaway),home_points,away_points),
+         goals=ifelse(grepl("home",homeaway),home_score,away_score),
+         receivedGoals=ifelse(grepl("home",homeaway),away_score,home_score)) %>%
+  select(date,tournament,country,team,points,goals,receivedGoals) -> results
+
+results %>%
+  filter(grepl("FIFA World Cup",tournament)) -> worldCupResults
+```
+
+### FIFA World Cup (and qualifiers)
+
+The most interesting matches occur at [FIFA World Cup](https://www.fifa.com/tournaments/mens/worldcup). So we can focus on what happens in this tournament:
+
+```{r}
+worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% mutate(yr=year(date)) %>% group_by(yr,team) %>% summarise( p=sum(points), goals=sum(goals), against=sum(receivedGoals),matches=n()) %>% mutate( performance=p/matches, ofensive=goals/matches, defense=against/matches) %>% ggplot(aes(x=yr, y=performance, fill=team)) + geom_bar(stat="identity") -> p
+ggplotly(p)
+```
+
+Germany emerges as the best in performance over all the matches related to the **World Cup**. Is not a surprise at all, remember all of the _"goleadas"_ that has produced, in the qualifiers as well as in the knock-out matches in the final stages of the tournament.
+
+Now we can take a look at what happens if we focus only on the final stage, I mean filtering out the qualifiers:
+
+```{r}
+worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% mutate(yr=year(date)) %>% group_by(yr,team) %>% summarise( p=sum(points), goals=sum(goals), against=sum(receivedGoals),matches=n()) %>% mutate( performance=p/matches, ofensive=goals/matches, defense=against/matches) %>% filter(team %in% c("Mexico","Brazil","Argentina","Germany","France")) %>% ggplot(aes(x=yr, y=performance, color=team)) + geom_line() -> p
+ggplotly(p)
+```
+
+
+
+
+
+
+
