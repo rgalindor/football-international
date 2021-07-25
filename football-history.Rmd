@@ -121,6 +121,10 @@ worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% mutate(yr=year(date
 ggplotly(p)
 ```
 
+```{r}
+worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% mutate(yr=year(date)) %>% group_by(yr,team) %>% summarise( p=sum(points), goals=sum(goals), against=sum(receivedGoals),matches=n()) %>% mutate( performance=p/matches, ofensive=goals/matches, defense=against/matches) %>% mutate(differenceGoal=ofensive-defense) %>% ggplot(aes(x=yr, color=team, y=differenceGoal)) + geom_line() -> p
+ggplotly(p)
+```
 
 
 
