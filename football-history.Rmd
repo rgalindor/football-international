@@ -6,9 +6,7 @@ output:
     df_print: paged
 ---
 
-Football is a very exciting sport. Until now, this is the most popular game on the entire Earth planet. Sorry, not sorry about other games.
-
-I want to review data collected since 1872 trying to understand how matches between countries have evolved up to this moment. So, we are calling to `R` and a few libraries to help us visualizing data:
+In a [recent analyisis](https://rgalindor.github.io/football-international/football-analysisi.html) we reviewed the performance of every National Team in the world. However evolution of the style of game is a fact that was not contemplated. So, in this post we can visualize how in FIFA World Cup every nation is evolving at different rates.
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(tidyverse)
