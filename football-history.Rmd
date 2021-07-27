@@ -35,26 +35,7 @@ head(results)
 One interesting thing is to take a look at the context of the matches, some of them could be not relevant at all, however, there is also **World cup** matches, continental tournaments, and so on:
 
 ```{r}
-levels(as.factor(results$tournament)) -> tournaments
-sample(tournaments,20)
-```
-
-Filtering by tournaments with at least 100 matches played in the history:
-
-```{r}
-results %>%
-  group_by(tournament) %>%
-  summarise(count=n()) %>%
-  filter(count > 100) %>%
-  select(tournament) -> popularCups
-
-results %>%
-  filter(tournament %in% popularCups$tournament) %>%
-  ggplot(aes(x=tournament, fill=tournament)) +
-  geom_bar() +
-  coord_flip() +
-  labs(title="Matches in tournaments") -> p 
-ggplotly(p)
+sample(levels(as.factor(results$tournament)),20)
 ```
 
 
@@ -126,6 +107,10 @@ ggplotly(p)
 
 
 
+```{r}
+worldCupResults %>% filter(!grepl("qualifi",tournament)) %>% mutate(yr=year(date)) %>% group_by(yr,team) %>% filter(team=="Mexico") %>% summarise( p=sum(points), goals=sum(goals), against=sum(receivedGoals),matches=n()) %>% mutate( performance=p/matches, ofensive=goals/matches, defense=against/matches) %>% mutate(differenceGoal=ofensive-defense) %>% ggplot(aes(x=yr)) + geom_line(aes(y=performance,color="performance")) + geom_line(aes(y=differenceGoal,color="goal difference")) + labs(title="History of mexican team", y="value", x="World Cup",color="Variable") -> p
+ggplotly(p)
+```
 
 
 
